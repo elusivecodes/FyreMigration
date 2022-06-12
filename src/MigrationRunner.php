@@ -307,7 +307,7 @@ class MigrationRunner
      */
     protected static function normalizeNamespace(string $namespace): string
     {
-        return rtrim($namespace, '\\').'\\';
+        return trim($namespace, '\\').'\\';
     }
 
 }

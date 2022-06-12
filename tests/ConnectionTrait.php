@@ -30,7 +30,7 @@ trait ConnectionTrait
         ]);
 
         MigrationRunner::clear();
-        MigrationRunner::setNamespace('Tests\Mock');
+        MigrationRunner::setNamespace('\Tests\Mock');
 
         ConnectionManager::clear();
         ConnectionManager::setConfig('default', [
