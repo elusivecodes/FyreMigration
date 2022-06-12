@@ -92,7 +92,7 @@ Migrate to a version.
 - `$version` is a number representing the migration version, and will default to *null*.
 
 ```php
-MigrationRunner::migration($version);
+MigrationRunner::migrate($version);
 ```
 
 **Rollback**
