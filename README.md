@@ -130,7 +130,7 @@ MigrationRunner::setNamespace($namespace);
 
 Migrations can be created by extending `\Fyre\Migration\Migration`, ensuring all below methods are implemented.
 
-Your migrations must be placed in the same namespace as defined in the `setNamespace` method above.
+Your migrations must be placed in the same namespace as defined by the `setNamespace` method above.
 
 Migration classes should follow the naming convention of `Migration_{version}` where `{version}` is the version number.
 
