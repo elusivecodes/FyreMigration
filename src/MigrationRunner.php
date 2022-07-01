@@ -9,14 +9,19 @@ use
     Fyre\FileSystem\Folder,
     Fyre\Forge\ForgeInterface,
     Fyre\Forge\ForgeRegistry,
-    Fyre\Loader\Loader;
+    Fyre\Loader\Loader,
+    Fyre\Utility\Path;
 
 use const
     SORT_NUMERIC;
 
 use function
+    array_pop,
     array_reverse,
+    array_unshift,
     class_exists,
+    explode,
+    implode,
     is_subclass_of,
     ksort,
     trim;
@@ -258,17 +263,47 @@ class MigrationRunner
     }
 
     /**
+     * Find all folders in namespaces.
+     */
+    protected static function findFolders(): array
+    {
+        $parts = explode('\\', static::$namespace);
+        $pathParts = [];
+
+        $folders = [];
+        while ($parts !== []) {
+            $namespace = implode('\\', $parts);
+            $paths = Loader::getNamespace($namespace);
+
+            foreach ($paths AS $path) {
+                $path = Path::join($path, ...$pathParts);
+                $folder = new Folder($path);
+
+                if (!$folder->exists()) {
+                    continue;
+                }
+
+                $folders[] = $folder;
+            }
+
+            $lastPart = array_pop($parts);
+            array_unshift($pathParts, $lastPart);
+        }
+
+        return $folders;
+    }
+
+    /**
      * Find the migration classes.
      * @return array The migration classes.
      */
     protected static function findMigrations(): array
     {
         $forge = static::getForge();
-        $paths = Loader::getNamespace(static::$namespace);
+        $folders = static::findFolders();
 
         $migrations = [];
-        foreach ($paths AS $path) {
-            $folder = new Folder($path);
+        foreach ($folders AS $folder) {
             $contents = $folder->contents();
 
             foreach ($contents AS $child) {
