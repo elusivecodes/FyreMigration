@@ -273,7 +273,7 @@ class MigrationRunner
         $folders = [];
         while ($parts !== []) {
             $namespace = implode('\\', $parts);
-            $paths = Loader::getNamespace($namespace);
+            $paths = Loader::getNamespacePaths($namespace);
 
             foreach ($paths AS $path) {
                 $path = Path::join($path, ...$pathParts);
