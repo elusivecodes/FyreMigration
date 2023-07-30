@@ -3,21 +3,20 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use
-    Fyre\Migration\Migration,
-    Fyre\Migration\MigrationRunner,
-    PHPUnit\Framework\TestCase,
-    Tests\ConnectionTrait;
+use Fyre\Migration\Exceptions\MigrationException;
+use Fyre\Migration\MigrationRunner;
+use PHPUnit\Framework\TestCase;
+use Tests\ConnectionTrait;
+use Tests\Mock\Migration_1;
+use Tests\Mock\Migration_2;
+use Tests\Mock\Migration_3;
 
-use function
-    array_column,
-    array_keys;
+use function array_column;
 
 final class MigrationRunnerTest extends TestCase
 {
 
-    use
-        ConnectionTrait;
+    use ConnectionTrait;
 
     public function testCurrentVersion(): void
     {
@@ -26,22 +25,45 @@ final class MigrationRunnerTest extends TestCase
         );
     }
 
+    public function testGetMigration(): void
+    {
+        $this->assertInstanceOf(
+            Migration_1::class,
+            MigrationRunner::getMigration(1)
+        );
+    }
+
     public function testGetMigrations(): void
     {
-        $migrations = MigrationRunner::getMigrations();
-
         $this->assertSame(
             [
-                1,
-                2,
-                3
+                1 => Migration_1::class,
+                2 => Migration_2::class,
+                3 => Migration_3::class
             ],
-            array_keys($migrations)
+            MigrationRunner::getMigrations()
         );
+    }
 
-        $this->assertInstanceOf(
-            Migration::class,
-            $migrations[1]
+    public function testGetNamespace(): void
+    {
+        $this->assertSame(
+            'Tests\Mock\\',
+            MigrationRunner::getNamespace()
+        );
+    }
+
+    public function testHasMigration(): void
+    {
+        $this->assertTrue(
+            MigrationRunner::hasMigration(2)
+        );
+    }
+
+    public function testHasMigrationFalse(): void
+    {
+        $this->assertFalse(
+            MigrationRunner::hasMigration(4)
         );
     }
 
@@ -144,6 +166,13 @@ final class MigrationRunnerTest extends TestCase
         );
     }
 
+    public function testMigrateInvalid(): void
+    {
+        $this->expectException(MigrationException::class);
+
+        MigrationRunner::migrate(4);
+    }
+
     public function testRollback(): void
     {
         MigrationRunner::migrate();
@@ -207,6 +236,13 @@ final class MigrationRunnerTest extends TestCase
             ],
             array_column($history, 'version')
         );
+    }
+
+    public function testRollbackInvalid(): void
+    {
+        $this->expectException(MigrationException::class);
+
+        MigrationRunner::rollback(4);
     }
 
 }

@@ -3,33 +3,32 @@ declare(strict_types=1);
 
 namespace Fyre\Migration;
 
-use
-    Fyre\DB\Connection,
-    Fyre\DB\ConnectionManager,
-    Fyre\FileSystem\Folder,
-    Fyre\Forge\ForgeInterface,
-    Fyre\Forge\ForgeRegistry,
-    Fyre\Loader\Loader,
-    Fyre\Utility\Path;
+use Fyre\DB\Connection;
+use Fyre\DB\ConnectionManager;
+use Fyre\FileSystem\Folder;
+use Fyre\Forge\Forge;
+use Fyre\Forge\ForgeRegistry;
+use Fyre\Loader\Loader;
+use Fyre\Migration\Exceptions\MigrationException;
+use Fyre\Utility\Path;
 
-use const
-    SORT_NUMERIC;
+use const SORT_NUMERIC;
 
-use function
-    array_pop,
-    array_reverse,
-    array_unshift,
-    class_exists,
-    explode,
-    implode,
-    is_subclass_of,
-    ksort,
-    trim;
+use function array_key_exists;
+use function array_pop;
+use function array_reverse;
+use function array_unshift;
+use function class_exists;
+use function explode;
+use function implode;
+use function is_subclass_of;
+use function ksort;
+use function trim;
 
 /**
  * MigrationRunner
  */
-class MigrationRunner
+abstract class MigrationRunner
 {
 
     protected static Connection|null $connection = null;
@@ -88,9 +87,9 @@ class MigrationRunner
 
     /**
      * Get the Forge.
-     * @return ForgeInterface The Forge.
+     * @return Forge The Forge.
      */
-    public static function getForge(): ForgeInterface
+    public static function getForge(): Forge
     {
         $connection = static::getConnection();
 
@@ -119,7 +118,16 @@ class MigrationRunner
      */
     public static function getMigration(int $version): Migration|null
     {
-        return static::getMigrations()[$version] ?? null;
+        $migrations = static::getMigrations();
+
+        if (!array_key_exists($version, $migrations)) {
+            return null;
+        }
+
+        $forge = static::getForge();
+        $migrationClass = $migrations[$version];
+
+        return new $migrationClass($forge);
     }
 
     /**
@@ -132,19 +140,49 @@ class MigrationRunner
     }
 
     /**
+     * Get the namespace.
+     * @return string The namespace.
+     */
+    public static function getNamespace(): string
+    {
+        return static::$namespace;
+    }
+
+    /**
+     * Determine if a migration version exists.
+     * @param int $version The migration version.
+     * @return bool TRUE if the migration version exists, otherwise FALSE.
+     */
+    public static function hasMigration(int $version): bool
+    {
+        $migrations = static::getMigrations();
+
+        return array_key_exists($version, $migrations);
+    }
+
+    /**
      * Migrate to a version.
      * @param int|null $version The migration version.
      */
     public static function migrate(int|null $version = null): void
     {
+        $migrations = static::getMigrations();
+
+        if ($version && !array_key_exists($version, $migrations)) {
+            throw MigrationException::forInvalidVersion($version);
+        }
+
         static::checkSchema();
 
         $current = static::currentVersion();
-        $migrations = static::getMigrations();
 
-        foreach ($migrations AS $migration) {
-            $migrationVersion = $migration->version();
+        if ($version && $version <= $current) {
+            return;
+        }
 
+        $forge = static::getForge();
+
+        foreach ($migrations AS $migrationVersion => $migrationClass) {
             if ($migrationVersion <= $current) {
                 continue;
             }
@@ -152,6 +190,8 @@ class MigrationRunner
             if ($version && $migrationVersion > $version) {
                 break;
             }
+
+            $migration = new $migrationClass($forge);
 
             $migration->up();
 
@@ -165,21 +205,31 @@ class MigrationRunner
      */
     public static function rollback(int|null $version = null)
     {
+        $migrations = static::getMigrations();
+
+        if ($version && !array_key_exists($version, $migrations)) {
+            throw MigrationException::forInvalidVersion($version);
+        }
+
         static::checkSchema();
 
         $current = static::currentVersion();
-        $migrations = static::getMigrations();
 
-        $migrations = array_reverse($migrations);
+        if ($version && $version >= $current) {
+            return;
+        }
+
+        $forge = static::getForge();
+        $migrations = array_reverse($migrations, true);
 
         $nextMigration = null;
 
-        foreach ($migrations AS $migration) {
-            $migrationVersion = $migration->version();
-
+        foreach ($migrations AS $migrationVersion => $migrationClass) {
             if ($migrationVersion > $current) {
                 continue;
             }
+
+            $migration = new $migrationClass($forge);
 
             if ($version && $migrationVersion <= $version) {
                 $nextMigration = $migration;
@@ -299,7 +349,6 @@ class MigrationRunner
      */
     protected static function findMigrations(): array
     {
-        $forge = static::getForge();
         $folders = static::findFolders();
 
         $migrations = [];
@@ -323,10 +372,9 @@ class MigrationRunner
                     continue;
                 }
 
-                $class = new $className($forge);
-                $version = $class->version();
+                $version = $className::version();
 
-                $migrations[$version] = $class;
+                $migrations[$version] = $className;
             }
         }
 

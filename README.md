@@ -1,6 +1,6 @@
 # FyreMigration
 
-**FyreMigration** is a free, migration library for *PHP*.
+**FyreMigration** is a free, open-source migration library for *PHP*.
 
 
 ## Table Of Contents
@@ -83,6 +83,24 @@ Get all migrations.
 
 ```php
 $migrations = MigrationRunner::getMigrations();
+```
+
+**Get Namespace**
+
+Get the namespace.
+
+```php
+$namespace = MigrationRunner::getNamespace();
+```
+
+**Has Migration**
+
+Check if a migration version exists.
+
+- `$version` is a number representing the migration version.
+
+```php
+$hasMigration = MigrationRunner::hasMigration($version);
 ```
 
 **Migrate**

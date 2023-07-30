@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 namespace Tests\Mock;
 
-use
-    Fyre\Migration\Migration;
+use Fyre\Migration\Migration;
 
 class Migration_2 extends Migration
 {
