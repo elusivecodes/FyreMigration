@@ -19,6 +19,7 @@ abstract class Migration
 
     /**
      * New Migration constructor.
+     * @param Forge $forge The Forge.
      */
     public function __construct(Forge $forge)
     {
