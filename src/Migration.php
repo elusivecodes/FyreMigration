@@ -45,6 +45,7 @@ abstract class Migration
     /**
      * Get the migration version.
      * @return int The migration version.
+     * @throws MigrationException if the class name is not valid.
      */
     public static function version(): int
     {

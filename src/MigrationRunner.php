@@ -163,6 +163,7 @@ abstract class MigrationRunner
     /**
      * Migrate to a version.
      * @param int|null $version The migration version.
+     * @throws MigrationException if the version is not valid.
      */
     public static function migrate(int|null $version = null): void
     {
@@ -202,6 +203,7 @@ abstract class MigrationRunner
     /**
      * Rollback to a version.
      * @param int|null $version The migration version.
+     * @throws MigrationException if the version is not valid.
      */
     public static function rollback(int|null $version = null)
     {
