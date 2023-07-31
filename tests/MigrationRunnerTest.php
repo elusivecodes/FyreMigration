@@ -6,7 +6,6 @@ namespace Tests;
 use Fyre\Migration\Exceptions\MigrationException;
 use Fyre\Migration\MigrationRunner;
 use PHPUnit\Framework\TestCase;
-use Tests\ConnectionTrait;
 use Tests\Mock\Migration_1;
 use Tests\Mock\Migration_2;
 use Tests\Mock\Migration_3;
