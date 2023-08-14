@@ -11,12 +11,12 @@ use RuntimeException;
 class MigrationException extends RuntimeException
 {
 
-    public static function forInvalidClassName(string $name = '')
+    public static function forInvalidClassName(string $name = ''): static
     {
         return new static('Migration invalid class name: '.$name);
     }
 
-    public static function forInvalidVersion(int $version)
+    public static function forInvalidVersion(int $version): static
     {
         return new static('Migration invalid version: '.$version);
     }

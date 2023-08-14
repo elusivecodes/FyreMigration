@@ -205,7 +205,7 @@ abstract class MigrationRunner
      * @param int|null $version The migration version.
      * @throws MigrationException if the version is not valid.
      */
-    public static function rollback(int|null $version = null)
+    public static function rollback(int|null $version = null): void
     {
         $migrations = static::getMigrations();
 
