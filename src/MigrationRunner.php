@@ -59,9 +59,11 @@ abstract class MigrationRunner
     {
         static::checkSchema();
 
-        $result = static::$connection->builder()
-            ->table(static::$table)
-            ->select('version')
+        $result = static::$connection
+            ->select([
+                'version'
+            ])
+            ->from(static::$table)
             ->orderBy([
                 'id' => 'DESC'
             ])
@@ -104,9 +106,8 @@ abstract class MigrationRunner
     {
         static::checkSchema();
 
-        return static::$connection->builder()
-            ->table(static::$table)
-            ->select('*')
+        return static::$connection->select()
+            ->from(static::$table)
             ->execute()
             ->all();
     }
@@ -272,12 +273,14 @@ abstract class MigrationRunner
      */
     protected static function addHistory(Migration|null $migration): void
     {
-        static::$connection->builder()
-            ->table(static::$table)
-            ->insert([
-                'version' => $migration ?
-                    $migration->version() :
-                    null
+        static::$connection->insert()
+            ->into(static::$table)
+            ->values([
+                [
+                    'version' => $migration ?
+                        $migration->version() :
+                        null
+                ]
             ])
             ->execute();
     }
