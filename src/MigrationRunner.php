@@ -305,6 +305,7 @@ abstract class MigrationRunner
             ])
             ->addColumn('version', [
                 'type' => 'int',
+                'unsigned' => true,
                 'nullable' => true
             ])
             ->addColumn('timestamp', [
