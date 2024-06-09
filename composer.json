@@ -22,7 +22,8 @@
     "require": {
         "fyre/filesystem": "^2.0",
         "fyre/forge": "^3.0",
-        "fyre/loader": "^2.0"
+        "fyre/loader": "^2.0",
+        "fyre/command": "^4.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^10"
