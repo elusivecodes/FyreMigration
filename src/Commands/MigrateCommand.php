@@ -12,6 +12,10 @@ use Fyre\Migration\MigrationRunner;
 class MigrateCommand extends Command
 {
 
+    protected string|null $alias = 'db:migrate';
+
+    protected string|null $name = 'Migrate';
+
     protected string $description = 'This command will perform DB migrations.';
 
     /**
