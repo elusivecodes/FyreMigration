@@ -14,37 +14,13 @@ use function preg_match;
  */
 abstract class Migration
 {
-
     protected Forge $forge;
 
     /**
-     * New Migration constructor.
-     * @param Forge $forge The Forge.
-     */
-    public function __construct(Forge $forge)
-    {
-        $this->forge = $forge;
-    }
-
-    /**
-     * Perform a "down" migration.
-     */
-    public function down(): void
-    {
-        
-    }
-
-    /**
-     * Perform an "up" migration.
-     */
-    public function up(): void
-    {
-        
-    }
-
-    /**
      * Get the migration version.
+     *
      * @return int The migration version.
+     *
      * @throws MigrationException if the class name is not valid.
      */
     public static function version(): int
@@ -59,4 +35,23 @@ abstract class Migration
         return (int) $match[1];
     }
 
+    /**
+     * New Migration constructor.
+     *
+     * @param Forge $forge The Forge.
+     */
+    public function __construct(Forge $forge)
+    {
+        $this->forge = $forge;
+    }
+
+    /**
+     * Perform a "down" migration.
+     */
+    public function down(): void {}
+
+    /**
+     * Perform an "up" migration.
+     */
+    public function up(): void {}
 }

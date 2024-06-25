@@ -11,15 +11,15 @@ use Fyre\Migration\MigrationRunner;
  */
 class RollbackCommand extends Command
 {
-
     protected string|null $alias = 'db:rollback';
-
-    protected string|null $name = 'Rollback';
 
     protected string $description = 'This command will perform DB rollbacks.';
 
+    protected string|null $name = 'Rollback';
+
     /**
      * Run the command.
+     *
      * @param array $arguments The command arguments.
      * @return int|null The exit code.
      */
@@ -29,5 +29,4 @@ class RollbackCommand extends Command
 
         return static::CODE_SUCCESS;
     }
-
 }

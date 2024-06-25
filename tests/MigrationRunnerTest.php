@@ -14,7 +14,6 @@ use function array_column;
 
 final class MigrationRunnerTest extends TestCase
 {
-
     use ConnectionTrait;
 
     public function testCurrentVersion(): void
@@ -38,7 +37,7 @@ final class MigrationRunnerTest extends TestCase
             [
                 1 => Migration_1::class,
                 2 => Migration_2::class,
-                3 => Migration_3::class
+                3 => Migration_3::class,
             ],
             MigrationRunner::getMigrations()
         );
@@ -93,39 +92,7 @@ final class MigrationRunnerTest extends TestCase
             [
                 1,
                 2,
-                3
-            ],
-            array_column($history, 'version')
-        );
-    }
-
-    public function testMigrateToVersion(): void
-    {
-        MigrationRunner::migrate(2);
-
-        $this->schema->clear();
-
-        $tableSchema = $this->schema->describe('test');
-
-        $this->assertTrue(
-            $tableSchema->hasColumn('value1')
-        );
-
-        $this->assertFalse(
-            $tableSchema->hasColumn('value2')
-        );
-
-        $this->assertSame(
-            2,
-            MigrationRunner::currentVersion()
-        );
-
-        $history = MigrationRunner::getHistory();
-
-        $this->assertSame(
-            [
-                1,
-                2
+                3,
             ],
             array_column($history, 'version')
         );
@@ -159,7 +126,7 @@ final class MigrationRunnerTest extends TestCase
             [
                 1,
                 2,
-                3
+                3,
             ],
             array_column($history, 'version')
         );
@@ -170,6 +137,38 @@ final class MigrationRunnerTest extends TestCase
         $this->expectException(MigrationException::class);
 
         MigrationRunner::migrate(4);
+    }
+
+    public function testMigrateToVersion(): void
+    {
+        MigrationRunner::migrate(2);
+
+        $this->schema->clear();
+
+        $tableSchema = $this->schema->describe('test');
+
+        $this->assertTrue(
+            $tableSchema->hasColumn('value1')
+        );
+
+        $this->assertFalse(
+            $tableSchema->hasColumn('value2')
+        );
+
+        $this->assertSame(
+            2,
+            MigrationRunner::currentVersion()
+        );
+
+        $history = MigrationRunner::getHistory();
+
+        $this->assertSame(
+            [
+                1,
+                2,
+            ],
+            array_column($history, 'version')
+        );
     }
 
     public function testRollback(): void
@@ -196,10 +195,17 @@ final class MigrationRunnerTest extends TestCase
                 3,
                 2,
                 1,
-                null
+                null,
             ],
             array_column($history, 'version')
         );
+    }
+
+    public function testRollbackInvalid(): void
+    {
+        $this->expectException(MigrationException::class);
+
+        MigrationRunner::rollback(4);
     }
 
     public function testRollbackToVersion(): void
@@ -231,17 +237,9 @@ final class MigrationRunnerTest extends TestCase
                 1,
                 2,
                 3,
-                2
+                2,
             ],
             array_column($history, 'version')
         );
     }
-
-    public function testRollbackInvalid(): void
-    {
-        $this->expectException(MigrationException::class);
-
-        MigrationRunner::rollback(4);
-    }
-
 }

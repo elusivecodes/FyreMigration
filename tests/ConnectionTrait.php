@@ -15,7 +15,6 @@ use function getenv;
 
 trait ConnectionTrait
 {
-
     protected Connection $db;
 
     protected Schema $schema;
@@ -24,7 +23,7 @@ trait ConnectionTrait
     {
         Loader::clear();
         Loader::addNamespaces([
-            'Tests\Mock' => 'tests/Mock'
+            'Tests\Mock' => 'tests/Mock',
         ]);
 
         MigrationRunner::clear();
@@ -42,8 +41,8 @@ trait ConnectionTrait
                 'collation' => 'utf8mb4_unicode_ci',
                 'charset' => 'utf8mb4',
                 'compress' => true,
-                'persist' => true
-            ]
+                'persist' => true,
+            ],
         ]);
 
         $this->db = ConnectionManager::use();
@@ -52,5 +51,4 @@ trait ConnectionTrait
         $this->db->query('DROP TABLE IF EXISTS migrations');
         $this->db->query('DROP TABLE IF EXISTS test');
     }
-
 }

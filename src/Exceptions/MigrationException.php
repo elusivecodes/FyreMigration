@@ -10,7 +10,6 @@ use RuntimeException;
  */
 class MigrationException extends RuntimeException
 {
-
     public static function forInvalidClassName(string $name = ''): static
     {
         return new static('Migration invalid class name: '.$name);
@@ -20,5 +19,4 @@ class MigrationException extends RuntimeException
     {
         return new static('Migration invalid version: '.$version);
     }
-
 }

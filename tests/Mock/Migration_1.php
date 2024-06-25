@@ -7,7 +7,6 @@ use Fyre\Migration\Migration;
 
 class Migration_1 extends Migration
 {
-
     public function down(): void
     {
         $this->forge->dropTable('test');
@@ -17,9 +16,8 @@ class Migration_1 extends Migration
     {
         $this->forge->createTable('test', [
             'id' => [
-                'type' => 'int'
-            ]
+                'type' => 'int',
+            ],
         ]);
     }
-
 }

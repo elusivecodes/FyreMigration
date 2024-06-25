@@ -7,7 +7,6 @@ use Fyre\Migration\Migration;
 
 class Migration_3 extends Migration
 {
-
     public function down(): void
     {
         $this->forge->dropColumn('test', 'value2');
@@ -17,5 +16,4 @@ class Migration_3 extends Migration
     {
         $this->forge->addColumn('test', 'value2');
     }
-
 }

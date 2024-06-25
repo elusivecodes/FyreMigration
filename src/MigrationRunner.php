@@ -12,8 +12,6 @@ use Fyre\Loader\Loader;
 use Fyre\Migration\Exceptions\MigrationException;
 use Fyre\Utility\Path;
 
-use const SORT_NUMERIC;
-
 use function array_key_exists;
 use function array_pop;
 use function array_reverse;
@@ -25,21 +23,22 @@ use function is_subclass_of;
 use function ksort;
 use function trim;
 
+use const SORT_NUMERIC;
+
 /**
  * MigrationRunner
  */
 abstract class MigrationRunner
 {
+    protected static bool $checked = false;
 
     protected static Connection|null $connection = null;
 
-    protected static string $table = 'migrations';
+    protected static array|null $migrations = null;
 
     protected static string $namespace = '';
 
-    protected static array|null $migrations = null;
-
-    protected static bool $checked = false;
+    protected static string $table = 'migrations';
 
     /**
      * Clear loaded migrations.
@@ -53,6 +52,7 @@ abstract class MigrationRunner
 
     /**
      * Get the current version.
+     *
      * @return int|null The current version.
      */
     public static function currentVersion(): int|null
@@ -61,11 +61,11 @@ abstract class MigrationRunner
 
         $result = static::$connection
             ->select([
-                'version'
+                'version',
             ])
             ->from(static::$table)
             ->orderBy([
-                'id' => 'DESC'
+                'id' => 'DESC',
             ])
             ->limit(1)
             ->execute()
@@ -80,6 +80,7 @@ abstract class MigrationRunner
 
     /**
      * Get the Connection.
+     *
      * @return Connection The Connection.
      */
     public static function getConnection(): Connection
@@ -89,6 +90,7 @@ abstract class MigrationRunner
 
     /**
      * Get the Forge.
+     *
      * @return Forge The Forge.
      */
     public static function getForge(): Forge
@@ -100,6 +102,7 @@ abstract class MigrationRunner
 
     /**
      * Get the migration history.
+     *
      * @return array The migration history.
      */
     public static function getHistory(): array
@@ -114,6 +117,7 @@ abstract class MigrationRunner
 
     /**
      * Get a Migration.
+     *
      * @param int $version The migration version.
      * @return Migration|null The Migration.
      */
@@ -133,6 +137,7 @@ abstract class MigrationRunner
 
     /**
      * Get all migrations.
+     *
      * @return array The migrations.
      */
     public static function getMigrations(): array
@@ -142,6 +147,7 @@ abstract class MigrationRunner
 
     /**
      * Get the namespace.
+     *
      * @return string The namespace.
      */
     public static function getNamespace(): string
@@ -151,6 +157,7 @@ abstract class MigrationRunner
 
     /**
      * Determine if a migration version exists.
+     *
      * @param int $version The migration version.
      * @return bool TRUE if the migration version exists, otherwise FALSE.
      */
@@ -163,7 +170,9 @@ abstract class MigrationRunner
 
     /**
      * Migrate to a version.
+     *
      * @param int|null $version The migration version.
+     *
      * @throws MigrationException if the version is not valid.
      */
     public static function migrate(int|null $version = null): void
@@ -184,7 +193,7 @@ abstract class MigrationRunner
 
         $forge = static::getForge();
 
-        foreach ($migrations AS $migrationVersion => $migrationClass) {
+        foreach ($migrations as $migrationVersion => $migrationClass) {
             if ($migrationVersion <= $current) {
                 continue;
             }
@@ -203,7 +212,9 @@ abstract class MigrationRunner
 
     /**
      * Rollback to a version.
+     *
      * @param int|null $version The migration version.
+     *
      * @throws MigrationException if the version is not valid.
      */
     public static function rollback(int|null $version = null): void
@@ -227,7 +238,7 @@ abstract class MigrationRunner
 
         $nextMigration = null;
 
-        foreach ($migrations AS $migrationVersion => $migrationClass) {
+        foreach ($migrations as $migrationVersion => $migrationClass) {
             if ($migrationVersion > $current) {
                 continue;
             }
@@ -251,6 +262,7 @@ abstract class MigrationRunner
 
     /**
      * Set the Connection.
+     *
      * @param Connection $connection The Connection.
      */
     public static function setConnection(Connection $connection): void
@@ -260,6 +272,7 @@ abstract class MigrationRunner
 
     /**
      * Set the namespace.
+     *
      * @param string $namespace The namespace.
      */
     public static function setNamespace(string $namespace): void
@@ -269,6 +282,7 @@ abstract class MigrationRunner
 
     /**
      * Add a Migration to the history.
+     *
      * @param Migration|null $migration The Migration.
      */
     protected static function addHistory(Migration|null $migration): void
@@ -279,8 +293,8 @@ abstract class MigrationRunner
                 [
                     'version' => $migration ?
                         $migration->version() :
-                        null
-                ]
+                        null,
+                ],
             ])
             ->execute();
     }
@@ -296,21 +310,21 @@ abstract class MigrationRunner
 
         static::getForge()
             ->build(static::$table, [
-                'clean' => true
+                'clean' => true,
             ])
             ->addColumn('id', [
                 'type' => 'int',
                 'unsigned' => true,
-                'extra' => 'AUTO_INCREMENT'
+                'extra' => 'AUTO_INCREMENT',
             ])
             ->addColumn('version', [
                 'type' => 'int',
                 'unsigned' => true,
-                'nullable' => true
+                'nullable' => true,
             ])
             ->addColumn('timestamp', [
                 'type' => 'timestamp',
-                'default' => 'CURRENT_TIMESTAMP()'
+                'default' => 'CURRENT_TIMESTAMP()',
             ])
             ->setPrimaryKey('id')
             ->execute();
@@ -331,7 +345,7 @@ abstract class MigrationRunner
             $namespace = implode('\\', $parts);
             $paths = Loader::getNamespacePaths($namespace);
 
-            foreach ($paths AS $path) {
+            foreach ($paths as $path) {
                 $path = Path::join($path, ...$pathParts);
                 $folder = new Folder($path);
 
@@ -351,6 +365,7 @@ abstract class MigrationRunner
 
     /**
      * Find the migration classes.
+     *
      * @return array The migration classes.
      */
     protected static function findMigrations(): array
@@ -358,10 +373,10 @@ abstract class MigrationRunner
         $folders = static::findFolders();
 
         $migrations = [];
-        foreach ($folders AS $folder) {
+        foreach ($folders as $folder) {
             $contents = $folder->contents();
 
-            foreach ($contents AS $child) {
+            foreach ($contents as $child) {
                 if ($child instanceof Folder) {
                     continue;
                 }
@@ -391,6 +406,7 @@ abstract class MigrationRunner
 
     /**
      * Normalize a namespace
+     *
      * @param string $namespace The namespace.
      * @return string The normalized namespace.
      */
@@ -398,5 +414,4 @@ abstract class MigrationRunner
     {
         return trim($namespace, '\\').'\\';
     }
-
 }
