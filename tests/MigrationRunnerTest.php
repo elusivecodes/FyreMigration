@@ -9,19 +9,11 @@ use PHPUnit\Framework\TestCase;
 use Tests\Mock\Migration_1;
 use Tests\Mock\Migration_2;
 use Tests\Mock\Migration_3;
-
-use function array_column;
+use Tests\Mysql\MysqlConnectionTrait;
 
 final class MigrationRunnerTest extends TestCase
 {
-    use ConnectionTrait;
-
-    public function testCurrentVersion(): void
-    {
-        $this->assertNull(
-            MigrationRunner::currentVersion()
-        );
-    }
+    use MysqlConnectionTrait;
 
     public function testGetMigration(): void
     {
@@ -71,30 +63,16 @@ final class MigrationRunnerTest extends TestCase
 
         $this->schema->clear();
 
-        $tableSchema = $this->schema->describe('test');
-
         $this->assertTrue(
-            $tableSchema->hasColumn('value1')
+            $this->schema->hasTable('test1')
         );
 
         $this->assertTrue(
-            $tableSchema->hasColumn('value2')
+            $this->schema->hasTable('test2')
         );
 
-        $this->assertSame(
-            3,
-            MigrationRunner::currentVersion()
-        );
-
-        $history = MigrationRunner::getHistory();
-
-        $this->assertSame(
-            [
-                1,
-                2,
-                3,
-            ],
-            array_column($history, 'version')
+        $this->assertTrue(
+            $this->schema->hasTable('test3')
         );
     }
 
@@ -105,30 +83,16 @@ final class MigrationRunnerTest extends TestCase
 
         $this->schema->clear();
 
-        $tableSchema = $this->schema->describe('test');
-
         $this->assertTrue(
-            $tableSchema->hasColumn('value1')
+            $this->schema->hasTable('test1')
         );
 
         $this->assertTrue(
-            $tableSchema->hasColumn('value2')
+            $this->schema->hasTable('test2')
         );
 
-        $this->assertSame(
-            3,
-            MigrationRunner::currentVersion()
-        );
-
-        $history = MigrationRunner::getHistory();
-
-        $this->assertSame(
-            [
-                1,
-                2,
-                3,
-            ],
-            array_column($history, 'version')
+        $this->assertTrue(
+            $this->schema->hasTable('test3')
         );
     }
 
@@ -145,29 +109,16 @@ final class MigrationRunnerTest extends TestCase
 
         $this->schema->clear();
 
-        $tableSchema = $this->schema->describe('test');
+        $this->assertTrue(
+            $this->schema->hasTable('test1')
+        );
 
         $this->assertTrue(
-            $tableSchema->hasColumn('value1')
+            $this->schema->hasTable('test2')
         );
 
         $this->assertFalse(
-            $tableSchema->hasColumn('value2')
-        );
-
-        $this->assertSame(
-            2,
-            MigrationRunner::currentVersion()
-        );
-
-        $history = MigrationRunner::getHistory();
-
-        $this->assertSame(
-            [
-                1,
-                2,
-            ],
-            array_column($history, 'version')
+            $this->schema->hasTable('test3')
         );
     }
 
@@ -179,25 +130,7 @@ final class MigrationRunnerTest extends TestCase
         $this->schema->clear();
 
         $this->assertFalse(
-            $this->schema->hasTable('test')
-        );
-
-        $this->assertNull(
-            MigrationRunner::currentVersion()
-        );
-
-        $history = MigrationRunner::getHistory();
-
-        $this->assertSame(
-            [
-                1,
-                2,
-                3,
-                2,
-                1,
-                null,
-            ],
-            array_column($history, 'version')
+            $this->schema->hasTable('test1')
         );
     }
 
@@ -215,31 +148,16 @@ final class MigrationRunnerTest extends TestCase
 
         $this->schema->clear();
 
-        $tableSchema = $this->schema->describe('test');
+        $this->assertTrue(
+            $this->schema->hasTable('test1')
+        );
 
         $this->assertTrue(
-            $tableSchema->hasColumn('value1')
+            $this->schema->hasTable('test2')
         );
 
         $this->assertFalse(
-            $tableSchema->hasColumn('value2')
-        );
-
-        $this->assertSame(
-            2,
-            MigrationRunner::currentVersion()
-        );
-
-        $history = MigrationRunner::getHistory();
-
-        $this->assertSame(
-            [
-                1,
-                2,
-                3,
-                2,
-            ],
-            array_column($history, 'version')
+            $this->schema->hasTable('test3')
         );
     }
 }

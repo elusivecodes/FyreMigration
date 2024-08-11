@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Fyre\Migration\Commands;
 
 use Fyre\Command\Command;
+use Fyre\DB\ConnectionManager;
 use Fyre\Migration\MigrationRunner;
 
 /**
@@ -25,6 +26,13 @@ class MigrateCommand extends Command
      */
     public function run(array $arguments = []): int|null
     {
+        $arguments['connection'] ??= null;
+
+        if ($arguments['connection']) {
+            $connection = ConnectionManager::use($arguments['connection']);
+            MigrationRunner::setConnection($connection);
+        }
+
         MigrationRunner::migrate($arguments['version'] ?? null);
 
         return static::CODE_SUCCESS;

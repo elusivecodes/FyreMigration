@@ -30,15 +30,13 @@ use const SORT_NUMERIC;
  */
 abstract class MigrationRunner
 {
-    protected static bool $checked = false;
-
     protected static Connection|null $connection = null;
+
+    protected static MigrationHistory|null $history = null;
 
     protected static array|null $migrations = null;
 
     protected static string $namespace = '';
-
-    protected static string $table = 'migrations';
 
     /**
      * Clear loaded migrations.
@@ -46,36 +44,8 @@ abstract class MigrationRunner
     public static function clear(): void
     {
         static::$connection = null;
+        static::$history = null;
         static::$migrations = null;
-        static::$checked = false;
-    }
-
-    /**
-     * Get the current version.
-     *
-     * @return int|null The current version.
-     */
-    public static function currentVersion(): int|null
-    {
-        static::checkSchema();
-
-        $result = static::$connection
-            ->select([
-                'version',
-            ])
-            ->from(static::$table)
-            ->orderBy([
-                'id' => 'DESC',
-            ])
-            ->limit(1)
-            ->execute()
-            ->first();
-
-        if (!$result || !$result['version']) {
-            return null;
-        }
-
-        return (int) $result['version'];
     }
 
     /**
@@ -95,24 +65,17 @@ abstract class MigrationRunner
      */
     public static function getForge(): Forge
     {
-        $connection = static::getConnection();
-
-        return ForgeRegistry::getForge($connection);
+        return ForgeRegistry::getForge(static::getConnection());
     }
 
     /**
-     * Get the migration history.
+     * Get the MigrationHistory.
      *
-     * @return array The migration history.
+     * @return MigrationHistory MigrationHistory.
      */
-    public static function getHistory(): array
+    public static function getHistory(): MigrationHistory
     {
-        static::checkSchema();
-
-        return static::$connection->select()
-            ->from(static::$table)
-            ->execute()
-            ->all();
+        return static::$history ??= MigrationHistoryRegistry::getHistory(static::getConnection());
     }
 
     /**
@@ -183,9 +146,7 @@ abstract class MigrationRunner
             throw MigrationException::forInvalidVersion($version);
         }
 
-        static::checkSchema();
-
-        $current = static::currentVersion();
+        $current = static::getHistory()->current();
 
         if ($version && $version <= $current) {
             return;
@@ -206,7 +167,7 @@ abstract class MigrationRunner
 
             $migration->up();
 
-            static::addHistory($migration);
+            static::getHistory()->add($migration);
         }
     }
 
@@ -225,9 +186,7 @@ abstract class MigrationRunner
             throw MigrationException::forInvalidVersion($version);
         }
 
-        static::checkSchema();
-
-        $current = static::currentVersion();
+        $current = static::getHistory()->current();
 
         if ($version && $version >= $current) {
             return;
@@ -253,11 +212,11 @@ abstract class MigrationRunner
             $migration->down();
 
             if ($migrationVersion < $current) {
-                static::addHistory($migration);
+                static::getHistory()->add($migration);
             }
         }
 
-        static::addHistory($nextMigration);
+        static::getHistory()->add($nextMigration);
     }
 
     /**
@@ -268,6 +227,8 @@ abstract class MigrationRunner
     public static function setConnection(Connection $connection): void
     {
         static::$connection = $connection;
+        static::$history = null;
+        static::$migrations = null;
     }
 
     /**
@@ -278,58 +239,6 @@ abstract class MigrationRunner
     public static function setNamespace(string $namespace): void
     {
         static::$namespace = static::normalizeNamespace($namespace);
-    }
-
-    /**
-     * Add a Migration to the history.
-     *
-     * @param Migration|null $migration The Migration.
-     */
-    protected static function addHistory(Migration|null $migration): void
-    {
-        static::$connection->insert()
-            ->into(static::$table)
-            ->values([
-                [
-                    'version' => $migration ?
-                        $migration->version() :
-                        null,
-                ],
-            ])
-            ->execute();
-    }
-
-    /**
-     * Check the migration schema.
-     */
-    protected static function checkSchema(): void
-    {
-        if (static::$checked) {
-            return;
-        }
-
-        static::getForge()
-            ->build(static::$table, [
-                'clean' => true,
-            ])
-            ->addColumn('id', [
-                'type' => 'int',
-                'unsigned' => true,
-                'extra' => 'AUTO_INCREMENT',
-            ])
-            ->addColumn('version', [
-                'type' => 'int',
-                'unsigned' => true,
-                'nullable' => true,
-            ])
-            ->addColumn('timestamp', [
-                'type' => 'timestamp',
-                'default' => 'CURRENT_TIMESTAMP()',
-            ])
-            ->setPrimaryKey('id')
-            ->execute();
-
-        static::$checked = true;
     }
 
     /**

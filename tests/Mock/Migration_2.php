@@ -9,11 +9,13 @@ class Migration_2 extends Migration
 {
     public function down(): void
     {
-        $this->forge->dropColumn('test', 'value1');
+        $this->forge->dropTable('test2');
     }
 
     public function up(): void
     {
-        $this->forge->addColumn('test', 'value1');
+        $this->forge->createTable('test2', [
+            'value' => [],
+        ]);
     }
 }

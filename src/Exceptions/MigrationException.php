@@ -19,4 +19,9 @@ class MigrationException extends RuntimeException
     {
         return new static('Migration invalid version: '.$version);
     }
+
+    public static function forMissingHandler(string $name): static
+    {
+        return new static('Missing handler for connection handler: '.$name);
+    }
 }

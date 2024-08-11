@@ -7,6 +7,8 @@
 - [Installation](#installation)
 - [Migration Runners](#migration-runners)
     - [Migrations](#migrations)
+- [Migration History Registry](#migration-history-registry)
+- [Migration Histories](#migration-histories)
 
 
 
@@ -35,14 +37,6 @@ Clear loaded migrations.
 MigrationRunner::clear();
 ```
 
-**Current Version**
-
-Get the current version.
-
-```php
-$currentVersion = MigrationRunner::currentVersion();
-```
-
 **Get Connection**
 
 Get the [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
@@ -61,7 +55,7 @@ $forge = MigrationRunner::getForge();
 
 **Get History**
 
-Get the migration history.
+Get the [*MigrationHistory*](#migration-histories).
 
 ```php
 $history = MigrationRunner::getHistory();
@@ -143,7 +137,6 @@ Set the namespace.
 MigrationRunner::setNamespace($namespace);
 ```
 
-
 ### Migrations
 
 Migrations can be created by extending `\Fyre\Migration\Migration`, ensuring all below methods are implemented.
@@ -166,4 +159,60 @@ Perform an "up" migration.
 
 ```php
 $migration->up();
+```
+
+
+## Migration History Registry
+
+```php
+use Fyre\Forge\MigrationHistoryRegistry;
+```
+
+**Get History**
+
+Get the [*MigrationHistory*](#migration-histories) for a [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
+
+- `$connection` is a [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
+
+```php
+$history = MigrationHistoryRegistry::getHistory($connection);
+```
+
+**Set Handler**
+
+Set a [*MigrationHistory*](#migration-histories) handler for a [*Connection*](https://github.com/elusivecodes/FyreDB#connections) class.
+
+- `$connectionClass` is a string representing the [*Connection*](https://github.com/elusivecodes/FyreDB#connections) class name.
+- `$historyClass` is a string representing the [*MigrationHistory*](#migration-histories) class name.
+
+```php
+MigrationHistoryRegistry::setHandler($connectionClass, $historyClass);
+```
+
+## Migration Histories
+
+**Add**
+
+Add a [*Migration*](#migrations) to the history.
+
+- `$migration` is a [*Migration*](#migrations).
+
+```php
+$history->add($migration);
+```
+
+**All**
+
+Get the migration history.
+
+```php
+$all = $history->all();
+```
+
+**Current**
+
+Get the current version.
+
+```php
+$version = $history->current();
 ```

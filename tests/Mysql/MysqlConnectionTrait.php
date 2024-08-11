@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Mysql;
 
 use Fyre\DB\Connection;
 use Fyre\DB\ConnectionManager;
-use Fyre\DB\Handlers\MySQL\MySQLConnection;
+use Fyre\DB\Handlers\Mysql\MysqlConnection;
 use Fyre\Loader\Loader;
 use Fyre\Migration\MigrationRunner;
 use Fyre\Schema\Schema;
@@ -13,7 +13,7 @@ use Fyre\Schema\SchemaRegistry;
 
 use function getenv;
 
-trait ConnectionTrait
+trait MysqlConnectionTrait
 {
     protected Connection $db;
 
@@ -32,12 +32,12 @@ trait ConnectionTrait
         ConnectionManager::clear();
         ConnectionManager::setConfig([
             'default' => [
-                'className' => MySQLConnection::class,
-                'host' => getenv('DB_HOST'),
-                'username' => getenv('DB_USERNAME'),
-                'password' => getenv('DB_PASSWORD'),
-                'database' => getenv('DB_NAME'),
-                'port' => getenv('DB_PORT'),
+                'className' => MysqlConnection::class,
+                'host' => getenv('MYSQL_HOST'),
+                'username' => getenv('MYSQL_USERNAME'),
+                'password' => getenv('MYSQL_PASSWORD'),
+                'database' => getenv('MYSQL_DATABASE'),
+                'port' => getenv('MYSQL_PORT'),
                 'collation' => 'utf8mb4_unicode_ci',
                 'charset' => 'utf8mb4',
                 'compress' => true,
@@ -49,6 +49,8 @@ trait ConnectionTrait
         $this->schema = SchemaRegistry::getSchema($this->db);
 
         $this->db->query('DROP TABLE IF EXISTS migrations');
-        $this->db->query('DROP TABLE IF EXISTS test');
+        $this->db->query('DROP TABLE IF EXISTS test1');
+        $this->db->query('DROP TABLE IF EXISTS test2');
+        $this->db->query('DROP TABLE IF EXISTS test3');
     }
 }
