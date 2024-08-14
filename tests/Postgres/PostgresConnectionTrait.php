@@ -45,7 +45,10 @@ trait PostgresConnectionTrait
 
         $this->db = ConnectionManager::use();
         $this->schema = SchemaRegistry::getSchema($this->db);
+    }
 
+    protected function tearDown(): void
+    {
         $this->db->query('DROP TABLE IF EXISTS migrations');
         $this->db->query('DROP TABLE IF EXISTS test1');
         $this->db->query('DROP TABLE IF EXISTS test2');
