@@ -80,7 +80,7 @@ abstract class MigrationHistoryRegistry
             }
         }
 
-        $historyClass = static::$handlers[$connectionClass];
+        $historyClass = static::$handlers[$connectionKey];
 
         return new $historyClass($connection);
     }
