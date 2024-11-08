@@ -164,10 +164,11 @@ class MigrationRunner
      * Migrate to a version.
      *
      * @param int|null $version The migration version.
+     * @return MigrationRunner The MigrationRunner.
      *
      * @throws MigrationException if the version is not valid.
      */
-    public function migrate(int|null $version = null): void
+    public function migrate(int|null $version = null): static
     {
         $migrations = $this->getMigrations();
 
@@ -178,7 +179,7 @@ class MigrationRunner
         $current = $this->getHistory()->current();
 
         if ($version && $version <= $current) {
-            return;
+            return $this;
         }
 
         foreach ($migrations as $migrationVersion => $migrationClass) {
@@ -198,16 +199,19 @@ class MigrationRunner
 
             $this->getHistory()->add($migrationVersion);
         }
+
+        return $this;
     }
 
     /**
      * Rollback to a version.
      *
      * @param int|null $version The migration version.
+     * @return MigrationRunner The MigrationRunner.
      *
      * @throws MigrationException if the version is not valid.
      */
-    public function rollback(int|null $version = null): void
+    public function rollback(int|null $version = null): static
     {
         $migrations = $this->getMigrations();
 
@@ -218,7 +222,7 @@ class MigrationRunner
         $current = $this->getHistory()->current();
 
         if ($version && $version >= $current) {
-            return;
+            return $this;
         }
 
         $migrations = array_reverse($migrations, true);
@@ -247,28 +251,36 @@ class MigrationRunner
         }
 
         $this->getHistory()->add($nextMigration);
+
+        return $this;
     }
 
     /**
      * Set the Connection.
      *
      * @param Connection $connection The Connection.
+     * @return MigrationRunner The MigrationRunner.
      */
-    public function setConnection(Connection $connection): void
+    public function setConnection(Connection $connection): static
     {
         $this->connection = $connection;
         $this->history = null;
         $this->migrations = null;
+
+        return $this;
     }
 
     /**
      * Set the namespace.
      *
      * @param string $namespace The namespace.
+     * @return MigrationRunner The MigrationRunner.
      */
-    public function setNamespace(string $namespace): void
+    public function setNamespace(string $namespace): static
     {
         $this->namespace = $this->normalizeNamespace($namespace);
+
+        return $this;
     }
 
     /**

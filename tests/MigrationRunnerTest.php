@@ -58,7 +58,10 @@ final class MigrationRunnerTest extends TestCase
 
     public function testMigrate(): void
     {
-        $this->migrationRunner->migrate();
+        $this->assertSame(
+            $this->migrationRunner,
+            $this->migrationRunner->migrate()
+        );
 
         $this->schema->clear();
 
@@ -124,7 +127,11 @@ final class MigrationRunnerTest extends TestCase
     public function testRollback(): void
     {
         $this->migrationRunner->migrate();
-        $this->migrationRunner->rollback();
+
+        $this->assertSame(
+            $this->migrationRunner,
+            $this->migrationRunner->rollback()
+        );
 
         $this->schema->clear();
 
