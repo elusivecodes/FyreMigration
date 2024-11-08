@@ -148,7 +148,7 @@ class MigrationRunner
     }
 
     /**
-     * Determine if a migration version exists.
+     * Determine whether a migration version exists.
      *
      * @param int $version The migration version.
      * @return bool TRUE if the migration version exists, otherwise FALSE.

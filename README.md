@@ -118,7 +118,7 @@ $namespace = $runner->getNamespace();
 
 **Has Migration**
 
-Check if a migration version exists.
+Determine whether a migration version exists.
 
 - `$version` is a number representing the migration version.
 
