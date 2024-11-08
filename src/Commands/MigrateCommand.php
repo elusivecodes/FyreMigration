@@ -30,18 +30,17 @@ class MigrateCommand extends Command
      *
      * @param ConnectionManager $connectionManager The ConnectionManager.
      * @param MigrationRunner $migrationRunner The MigrationRunner.
-     * @param string|null $db The connection key.
+     * @param string $db The connection key.
      * @param int|null $version The migration version.
      * @return int|null The exit code.
      */
-    public function run(ConnectionManager $connectionManager, MigrationRunner $migrationRunner, string|null $db = null, int|null $version = null): int|null
+    public function run(ConnectionManager $connectionManager, MigrationRunner $migrationRunner, string $db, int|null $version = null): int|null
     {
-        if ($db) {
-            $connection = $connectionManager->use($db);
-            $migrationRunner->setConnection($connection);
-        }
+        $connection = $connectionManager->use($db);
 
-        $migrationRunner->migrate($version);
+        $migrationRunner
+            ->setConnection($connection)
+            ->migrate($version);
 
         return static::CODE_SUCCESS;
     }
