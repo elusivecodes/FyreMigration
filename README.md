@@ -5,10 +5,13 @@
 
 ## Table Of Contents
 - [Installation](#installation)
-- [Migration Runners](#migration-runners)
-    - [Migrations](#migrations)
-- [Migration History Registry](#migration-history-registry)
+- [Basic Usage](#basic-usage)
+- [Methods](#methods)
+- [Migrations](#migrations)
 - [Migration Histories](#migration-histories)
+- [Commands](#commands)
+    - [Migrate](#migrate)
+    - [Rollback](#rollback)
 
 
 
@@ -27,14 +30,40 @@ use Fyre\Migration\MigrationRunner;
 ```
 
 
-## Migration Runners
+## Basic Usage
+
+- `$container` is a [*Container*](https://github.com/elusivecodes/FyreContainer).
+- `$loader` is a [*Loader*](https://github.com/elusivecodes/FyreLoader).
+- `$connectionManager` is a [*ConnectionManager*](https://github.com/elusivecodes/FyreDB).
+- `$forgeRegistry` is a [*ForgeRegistry*](https://github.com/elusivecodes/FyreForge).
+
+```php
+$runner = new MigrationRunner($container, $loader, $connectionManager, $forgeRegistry);
+```
+
+**Autoloading**
+
+It is recommended to bind the *MigrationRunner* to the [*Container*](https://github.com/elusivecodes/FyreContainer) as a singleton.
+
+```php
+$container->singleton(MigrationRunner::class);
+```
+
+Any dependencies will be injected automatically when loading from the [*Container*](https://github.com/elusivecodes/FyreContainer).
+
+```php
+$runner = $container->use(MigrationRunner::class);
+```
+
+
+## Methods
 
 **Clear**
 
 Clear loaded migrations.
 
 ```php
-MigrationRunner::clear();
+$runner->clear();
 ```
 
 **Get Connection**
@@ -42,7 +71,7 @@ MigrationRunner::clear();
 Get the [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
 
 ```php
-$connection = MigrationRunner::getConnection();
+$connection = $runner->getConnection();
 ```
 
 **Get Forge**
@@ -50,7 +79,7 @@ $connection = MigrationRunner::getConnection();
 Get the [*Forge*](https://github.com/elusivecodes/FyreForge#forges).
 
 ```php
-$forge = MigrationRunner::getForge();
+$forge = $runner->getForge();
 ```
 
 **Get History**
@@ -58,7 +87,7 @@ $forge = MigrationRunner::getForge();
 Get the [*MigrationHistory*](#migration-histories).
 
 ```php
-$history = MigrationRunner::getHistory();
+$history = $runner->getHistory();
 ```
 
 **Get Migration**
@@ -68,7 +97,7 @@ Get a [*Migration*](#migrations).
 - `$version` is a number representing the migration version.
 
 ```php
-$migration = MigrationRunner::getMigration($version);
+$migration = $runner->getMigration($version);
 ```
 
 **Get Migrations**
@@ -76,7 +105,7 @@ $migration = MigrationRunner::getMigration($version);
 Get all migrations.
 
 ```php
-$migrations = MigrationRunner::getMigrations();
+$migrations = $runner->getMigrations();
 ```
 
 **Get Namespace**
@@ -84,7 +113,7 @@ $migrations = MigrationRunner::getMigrations();
 Get the namespace.
 
 ```php
-$namespace = MigrationRunner::getNamespace();
+$namespace = $runner->getNamespace();
 ```
 
 **Has Migration**
@@ -94,7 +123,7 @@ Check if a migration version exists.
 - `$version` is a number representing the migration version.
 
 ```php
-$hasMigration = MigrationRunner::hasMigration($version);
+$hasMigration = $runner->hasMigration($version);
 ```
 
 **Migrate**
@@ -104,7 +133,7 @@ Migrate to a version.
 - `$version` is a number representing the migration version, and will default to *null*.
 
 ```php
-MigrationRunner::migrate($version);
+$runner->migrate($version);
 ```
 
 **Rollback**
@@ -114,7 +143,7 @@ Rollback to a version.
 - `$version` is a number representing the migration version, and will default to *null*.
 
 ```php
-MigrationRunner::rollback($version);
+$runner->rollback($version);
 ```
 
 **Set Connection**
@@ -124,7 +153,7 @@ Set the [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
 - `$connection` is the [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
 
 ```php
-MigrationRunner::setConnection($connection);
+$runner->setConnection($connection);
 ```
 
 **Set Namespace**
@@ -134,10 +163,11 @@ Set the namespace.
 - `$namespace` is a string representing the migration namespace.
 
 ```php
-MigrationRunner::setNamespace($namespace);
+$runner->setNamespace($namespace);
 ```
 
-### Migrations
+
+## Migrations
 
 Migrations can be created by extending `\Fyre\Migration\Migration`, ensuring all below methods are implemented.
 
@@ -162,43 +192,16 @@ $migration->up();
 ```
 
 
-## Migration History Registry
-
-```php
-use Fyre\Forge\MigrationHistoryRegistry;
-```
-
-**Get History**
-
-Get the [*MigrationHistory*](#migration-histories) for a [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
-
-- `$connection` is a [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
-
-```php
-$history = MigrationHistoryRegistry::getHistory($connection);
-```
-
-**Set Handler**
-
-Set a [*MigrationHistory*](#migration-histories) handler for a [*Connection*](https://github.com/elusivecodes/FyreDB#connections) class.
-
-- `$connectionClass` is a string representing the [*Connection*](https://github.com/elusivecodes/FyreDB#connections) class name.
-- `$historyClass` is a string representing the [*MigrationHistory*](#migration-histories) class name.
-
-```php
-MigrationHistoryRegistry::setHandler($connectionClass, $historyClass);
-```
-
 ## Migration Histories
 
 **Add**
 
-Add a [*Migration*](#migrations) to the history.
+Add a migration version to the history.
 
-- `$migration` is a [*Migration*](#migrations).
+- `$version` is a number representing the migration version.
 
 ```php
-$history->add($migration);
+$history->add($version);
 ```
 
 **All**
@@ -215,4 +218,29 @@ Get the current version.
 
 ```php
 $version = $history->current();
+```
+
+
+## Commands
+
+### Migrate
+
+Perform database migrations.
+
+- `--db` is the [*ConnectionManager*](https://github.com/elusivecodes/FyreDB) config key, and will default to `ConnectionManager::DEFAULT`.
+- `--version` is the migration version, and will default to *null*.
+
+```php
+$commandRunner->run('db:migrate', ['--db', 'default', '--version', '2']);
+```
+
+### Rollback
+
+Perform database rollbacks.
+
+- `--db` is the [*ConnectionManager*](https://github.com/elusivecodes/FyreDB) config key, and will default to `ConnectionManager::DEFAULT`.
+- `--version` is the migration version, and will default to *null*.
+
+```php
+$commandRunner->run('db:rollback', ['--db', 'default', '--version', '1']);
 ```

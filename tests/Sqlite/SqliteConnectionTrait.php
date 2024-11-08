@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 namespace Tests\Sqlite;
 
+use Fyre\Container\Container;
 use Fyre\DB\Connection;
 use Fyre\DB\ConnectionManager;
 use Fyre\DB\Handlers\Sqlite\SqliteConnection;
+use Fyre\DB\TypeParser;
+use Fyre\Forge\ForgeRegistry;
 use Fyre\Loader\Loader;
 use Fyre\Migration\MigrationRunner;
 use Fyre\Schema\Schema;
@@ -15,28 +18,40 @@ trait SqliteConnectionTrait
 {
     protected Connection $db;
 
+    protected ForgeRegistry $forgeRegistry;
+
+    protected MigrationRunner $migrationRunner;
+
     protected Schema $schema;
+
+    protected TypeParser $typeParser;
 
     protected function setUp(): void
     {
-        Loader::clear();
-        Loader::addNamespaces([
+
+        $container = new Container();
+        $container->singleton(Loader::class);
+        $container->singleton(TypeParser::class);
+        $container->singleton(ConnectionManager::class);
+        $container->singleton(SchemaRegistry::class);
+        $container->singleton(ForgeRegistry::class);
+
+        $this->typeParser = $container->use(TypeParser::class);
+        $this->forgeRegistry = $container->use(ForgeRegistry::class);
+        $this->migrationRunner = $container->use(MigrationRunner::class);
+
+        $this->db = $container->use(ConnectionManager::class)->setConfig(ConnectionManager::DEFAULT, [
+            'className' => SqliteConnection::class,
+            'persist' => true,
+        ])->use();
+
+        $this->schema = $container->use(SchemaRegistry::class)->use($this->db);
+
+        $container->use(Loader::class)->addNamespaces([
             'Tests\Mock' => 'tests/Mock',
         ]);
 
-        MigrationRunner::clear();
-        MigrationRunner::setNamespace('\Tests\Mock');
-
-        ConnectionManager::clear();
-        ConnectionManager::setConfig([
-            'default' => [
-                'className' => SqliteConnection::class,
-                'persist' => true,
-            ],
-        ]);
-
-        $this->db = ConnectionManager::use();
-        $this->schema = SchemaRegistry::getSchema($this->db);
+        $this->migrationRunner->setNamespace('\Tests\Mock');
     }
 
     protected function tearDown(): void

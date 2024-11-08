@@ -4,9 +4,8 @@ declare(strict_types=1);
 namespace Tests\Sqlite;
 
 use Fyre\DateTime\DateTime;
-use Fyre\DB\TypeParser;
-use Fyre\Forge\ForgeRegistry;
-use Fyre\Migration\MigrationRunner;
+use Fyre\DB\Types\DateTimeType;
+use Fyre\DB\Types\IntegerType;
 use PHPUnit\Framework\TestCase;
 
 final class MigrationHistoryTest extends TestCase
@@ -15,9 +14,9 @@ final class MigrationHistoryTest extends TestCase
 
     public function testAllAfterMigration(): void
     {
-        MigrationRunner::migrate();
+        $this->migrationRunner->migrate();
 
-        $history = MigrationRunner::getHistory()->all();
+        $history = $this->migrationRunner->getHistory()->all();
 
         $this->assertSame(
             [
@@ -31,10 +30,10 @@ final class MigrationHistoryTest extends TestCase
 
     public function testAllAfterRollback(): void
     {
-        MigrationRunner::migrate();
-        MigrationRunner::rollback();
+        $this->migrationRunner->migrate();
+        $this->migrationRunner->rollback();
 
-        $history = MigrationRunner::getHistory()->all();
+        $history = $this->migrationRunner->getHistory()->all();
 
         $this->assertSame(
             [
@@ -52,49 +51,49 @@ final class MigrationHistoryTest extends TestCase
     public function testCurrent(): void
     {
         $this->assertNull(
-            MigrationRunner::getHistory()->current()
+            $this->migrationRunner->getHistory()->current()
         );
     }
 
     public function testCurrentAfterMigration(): void
     {
-        MigrationRunner::migrate();
+        $this->migrationRunner->migrate();
 
         $this->assertSame(
             3,
-            MigrationRunner::getHistory()->current()
+            $this->migrationRunner->getHistory()->current()
         );
     }
 
     public function testCurrentAfterRollback(): void
     {
-        MigrationRunner::migrate();
-        MigrationRunner::rollback();
+        $this->migrationRunner->migrate();
+        $this->migrationRunner->rollback();
 
         $this->assertNull(
-            MigrationRunner::getHistory()->current()
+            $this->migrationRunner->getHistory()->current()
         );
     }
 
     public function testSchema(): void
     {
-        MigrationRunner::getHistory();
+        $this->migrationRunner->getHistory();
 
         $this->assertSame(
             [],
-            ForgeRegistry::getForge($this->db)
+            $this->forgeRegistry->use($this->db)
                 ->build('migrations')
                 ->clear()
                 ->addColumn('id', [
-                    'type' => 'integer',
+                    'type' => IntegerType::class,
                     'autoIncrement' => true,
                 ])
                 ->addColumn('version', [
-                    'type' => 'integer',
+                    'type' => IntegerType::class,
                     'nullable' => true,
                 ])
                 ->addColumn('timestamp', [
-                    'type' => 'timestamp',
+                    'type' => DateTimeType::class,
                     'default' => 'CURRENT_TIMESTAMP',
                 ])
                 ->setPrimaryKey('id')
@@ -106,13 +105,13 @@ final class MigrationHistoryTest extends TestCase
     {
         $now = DateTime::now();
 
-        MigrationRunner::migrate();
+        $this->migrationRunner->migrate();
 
-        $history = MigrationRunner::getHistory()->all();
+        $history = $this->migrationRunner->getHistory()->all();
 
         $this->assertGreaterThanOrEqual(
             $now,
-            TypeParser::use('datetime')->parse($history[0]['timestamp'])
+            $this->typeParser->use('datetime')->parse($history[0]['timestamp'])
         );
     }
 }

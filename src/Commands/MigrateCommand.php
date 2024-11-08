@@ -14,26 +14,34 @@ class MigrateCommand extends Command
 {
     protected string|null $alias = 'db:migrate';
 
-    protected string $description = 'This command will perform DB migrations.';
+    protected string $description = 'Perform database migrations.';
 
-    protected string|null $name = 'Migrate';
+    protected array $options = [
+        'db' => [
+            'default' => ConnectionManager::DEFAULT,
+        ],
+        'version' => [
+            'default' => null,
+        ],
+    ];
 
     /**
      * Run the command.
      *
-     * @param array $arguments The command arguments.
+     * @param ConnectionManager $connectionManager The ConnectionManager.
+     * @param MigrationRunner $migrationRunner The MigrationRunner.
+     * @param string|null $db The connection key.
+     * @param int|null $version The migration version.
      * @return int|null The exit code.
      */
-    public function run(array $arguments = []): int|null
+    public function run(ConnectionManager $connectionManager, MigrationRunner $migrationRunner, string|null $db = null, int|null $version = null): int|null
     {
-        $arguments['connection'] ??= null;
-
-        if ($arguments['connection']) {
-            $connection = ConnectionManager::use($arguments['connection']);
-            MigrationRunner::setConnection($connection);
+        if ($db) {
+            $connection = $connectionManager->use($db);
+            $migrationRunner->setConnection($connection);
         }
 
-        MigrationRunner::migrate($arguments['version'] ?? null);
+        $migrationRunner->migrate($version);
 
         return static::CODE_SUCCESS;
     }

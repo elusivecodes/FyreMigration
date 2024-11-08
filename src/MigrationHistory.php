@@ -3,43 +3,48 @@
 namespace Fyre\Migration;
 
 use Fyre\DB\Connection;
+use Fyre\DB\Types\DateTimeType;
+use Fyre\DB\Types\IntegerType;
+use Fyre\Forge\ForgeRegistry;
 
 /**
  * MigrationHistory
  */
-abstract class MigrationHistory
+class MigrationHistory
 {
     protected static string $table = 'migrations';
 
     protected Connection $connection;
 
+    protected ForgeRegistry $forgeRegistry;
+
     /**
      * New MigrationHistory constructor.
      *
      * @param Connection $connection The Connection.
+     * @param ForgeRegistry $forgeRegistry The ForgeRegistry.
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, ForgeRegistry $forgeRegistry)
     {
         $this->connection = $connection;
+        $this->forgeRegistry = $forgeRegistry;
 
         $this->check();
     }
 
     /**
-     * Add a Migration to the history.
+     * Add a migration version to the history.
      *
-     * @param Migration|null $migration The Migration.
+     * @param int|null $version The migration version.
      */
-    public function add(Migration|null $migration): void
+    public function add(int|null $version): void
     {
         $this->connection
             ->insert()
             ->into(static::$table)
             ->values([
                 [
-                    'version' => $migration ?
-                        $migration->version() :
-                        null,
+                    'version' => $version,
                 ],
             ])
             ->execute();
@@ -88,5 +93,27 @@ abstract class MigrationHistory
     /**
      * Check the migration schema.
      */
-    abstract protected function check(): void;
+    /**
+     * Check the migration schema.
+     */
+    protected function check(): void
+    {
+        $this->forgeRegistry->use($this->connection)
+            ->build(static::$table)
+            ->clear()
+            ->addColumn('id', [
+                'type' => IntegerType::class,
+                'autoIncrement' => true,
+            ])
+            ->addColumn('version', [
+                'type' => IntegerType::class,
+                'nullable' => true,
+            ])
+            ->addColumn('timestamp', [
+                'type' => DateTimeType::class,
+                'default' => 'CURRENT_TIMESTAMP',
+            ])
+            ->setPrimaryKey('id')
+            ->execute();
+    }
 }

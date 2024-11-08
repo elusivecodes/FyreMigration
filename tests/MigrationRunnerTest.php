@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Tests;
 
 use Fyre\Migration\Exceptions\MigrationException;
-use Fyre\Migration\MigrationRunner;
 use PHPUnit\Framework\TestCase;
 use Tests\Mock\Migration_1;
 use Tests\Mock\Migration_2;
@@ -19,7 +18,7 @@ final class MigrationRunnerTest extends TestCase
     {
         $this->assertInstanceOf(
             Migration_1::class,
-            MigrationRunner::getMigration(1)
+            $this->migrationRunner->getMigration(1)
         );
     }
 
@@ -31,7 +30,7 @@ final class MigrationRunnerTest extends TestCase
                 2 => Migration_2::class,
                 3 => Migration_3::class,
             ],
-            MigrationRunner::getMigrations()
+            $this->migrationRunner->getMigrations()
         );
     }
 
@@ -39,27 +38,27 @@ final class MigrationRunnerTest extends TestCase
     {
         $this->assertSame(
             'Tests\Mock\\',
-            MigrationRunner::getNamespace()
+            $this->migrationRunner->getNamespace()
         );
     }
 
     public function testHasMigration(): void
     {
         $this->assertTrue(
-            MigrationRunner::hasMigration(2)
+            $this->migrationRunner->hasMigration(2)
         );
     }
 
     public function testHasMigrationFalse(): void
     {
         $this->assertFalse(
-            MigrationRunner::hasMigration(4)
+            $this->migrationRunner->hasMigration(4)
         );
     }
 
     public function testMigrate(): void
     {
-        MigrationRunner::migrate();
+        $this->migrationRunner->migrate();
 
         $this->schema->clear();
 
@@ -78,8 +77,8 @@ final class MigrationRunnerTest extends TestCase
 
     public function testMigrateFromVersion(): void
     {
-        MigrationRunner::migrate(2);
-        MigrationRunner::migrate();
+        $this->migrationRunner->migrate(2);
+        $this->migrationRunner->migrate();
 
         $this->schema->clear();
 
@@ -100,12 +99,12 @@ final class MigrationRunnerTest extends TestCase
     {
         $this->expectException(MigrationException::class);
 
-        MigrationRunner::migrate(4);
+        $this->migrationRunner->migrate(4);
     }
 
     public function testMigrateToVersion(): void
     {
-        MigrationRunner::migrate(2);
+        $this->migrationRunner->migrate(2);
 
         $this->schema->clear();
 
@@ -124,8 +123,8 @@ final class MigrationRunnerTest extends TestCase
 
     public function testRollback(): void
     {
-        MigrationRunner::migrate();
-        MigrationRunner::rollback();
+        $this->migrationRunner->migrate();
+        $this->migrationRunner->rollback();
 
         $this->schema->clear();
 
@@ -138,13 +137,13 @@ final class MigrationRunnerTest extends TestCase
     {
         $this->expectException(MigrationException::class);
 
-        MigrationRunner::rollback(4);
+        $this->migrationRunner->rollback(4);
     }
 
     public function testRollbackToVersion(): void
     {
-        MigrationRunner::migrate();
-        MigrationRunner::rollback(2);
+        $this->migrationRunner->migrate();
+        $this->migrationRunner->rollback(2);
 
         $this->schema->clear();
 
