@@ -5,7 +5,7 @@ namespace Tests\Mock;
 
 use Fyre\Migration\Migration;
 
-class Migration_1 extends Migration
+class Migration_1_Test1 extends Migration
 {
     public function down(): void
     {

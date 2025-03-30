@@ -3,56 +3,35 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Fyre\Migration\Exceptions\MigrationException;
 use PHPUnit\Framework\TestCase;
-use Tests\Mock\Migration_1;
-use Tests\Mock\Migration_2;
-use Tests\Mock\Migration_3;
+use Tests\Mock\Migration_1_Test1;
+use Tests\Mock\Migration_2_Test2;
+use Tests\Mock\Migration_3_Test3;
 use Tests\Mysql\MysqlConnectionTrait;
 
 final class MigrationRunnerTest extends TestCase
 {
     use MysqlConnectionTrait;
 
-    public function testGetMigration(): void
-    {
-        $this->assertInstanceOf(
-            Migration_1::class,
-            $this->migrationRunner->getMigration(1)
-        );
-    }
-
     public function testGetMigrations(): void
     {
         $this->assertSame(
             [
-                1 => Migration_1::class,
-                2 => Migration_2::class,
-                3 => Migration_3::class,
+                '1_Test1' => Migration_1_Test1::class,
+                '2_Test2' => Migration_2_Test2::class,
+                '3_Test3' => Migration_3_Test3::class,
             ],
             $this->migrationRunner->getMigrations()
         );
     }
 
-    public function testGetNamespace(): void
+    public function testGetNamespaces(): void
     {
         $this->assertSame(
-            'Tests\Mock\\',
-            $this->migrationRunner->getNamespace()
-        );
-    }
-
-    public function testHasMigration(): void
-    {
-        $this->assertTrue(
-            $this->migrationRunner->hasMigration(2)
-        );
-    }
-
-    public function testHasMigrationFalse(): void
-    {
-        $this->assertFalse(
-            $this->migrationRunner->hasMigration(4)
+            [
+                'Tests\Mock\\',
+            ],
+            $this->migrationRunner->getNamespaces()
         );
     }
 
@@ -80,7 +59,8 @@ final class MigrationRunnerTest extends TestCase
 
     public function testMigrateFromVersion(): void
     {
-        $this->migrationRunner->migrate(2);
+        $this->migrationRunner->migrate();
+        $this->migrationRunner->rollback();
         $this->migrationRunner->migrate();
 
         $this->schema->clear();
@@ -94,32 +74,6 @@ final class MigrationRunnerTest extends TestCase
         );
 
         $this->assertTrue(
-            $this->schema->hasTable('test3')
-        );
-    }
-
-    public function testMigrateInvalid(): void
-    {
-        $this->expectException(MigrationException::class);
-
-        $this->migrationRunner->migrate(4);
-    }
-
-    public function testMigrateToVersion(): void
-    {
-        $this->migrationRunner->migrate(2);
-
-        $this->schema->clear();
-
-        $this->assertTrue(
-            $this->schema->hasTable('test1')
-        );
-
-        $this->assertTrue(
-            $this->schema->hasTable('test2')
-        );
-
-        $this->assertFalse(
             $this->schema->hasTable('test3')
         );
     }
@@ -138,19 +92,20 @@ final class MigrationRunnerTest extends TestCase
         $this->assertFalse(
             $this->schema->hasTable('test1')
         );
+
+        $this->assertFalse(
+            $this->schema->hasTable('test2')
+        );
+
+        $this->assertFalse(
+            $this->schema->hasTable('test3')
+        );
     }
 
-    public function testRollbackInvalid(): void
-    {
-        $this->expectException(MigrationException::class);
-
-        $this->migrationRunner->rollback(4);
-    }
-
-    public function testRollbackToVersion(): void
+    public function testRollbackSteps(): void
     {
         $this->migrationRunner->migrate();
-        $this->migrationRunner->rollback(2);
+        $this->migrationRunner->rollback(steps: 2);
 
         $this->schema->clear();
 
@@ -158,7 +113,7 @@ final class MigrationRunnerTest extends TestCase
             $this->schema->hasTable('test1')
         );
 
-        $this->assertTrue(
+        $this->assertFalse(
             $this->schema->hasTable('test2')
         );
 

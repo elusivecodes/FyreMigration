@@ -6,7 +6,10 @@ namespace Tests\Mysql;
 use Fyre\DateTime\DateTime;
 use Fyre\DB\Types\DateTimeType;
 use Fyre\DB\Types\IntegerType;
+use Fyre\DB\Types\StringType;
 use PHPUnit\Framework\TestCase;
+
+use function array_column;
 
 final class MigrationHistoryTest extends TestCase
 {
@@ -20,58 +23,38 @@ final class MigrationHistoryTest extends TestCase
 
         $this->assertSame(
             [
-                1,
-                2,
-                3,
+                '3_Test3',
+                '2_Test2',
+                '1_Test1',
             ],
-            array_column($history, 'version')
+            array_column($history, 'migration')
         );
     }
 
     public function testAllAfterRollback(): void
     {
         $this->migrationRunner->migrate();
-        $this->migrationRunner->rollback();
+        $this->migrationRunner->rollback(steps: 1);
+        $this->migrationRunner->migrate();
 
         $history = $this->migrationRunner->getHistory()->all();
 
         $this->assertSame(
             [
-                1,
-                2,
-                3,
-                2,
-                1,
-                null,
+                '3_Test3',
+                '2_Test2',
+                '1_Test1',
             ],
-            array_column($history, 'version')
+            array_column($history, 'migration')
         );
-    }
-
-    public function testCurrent(): void
-    {
-        $this->assertNull(
-            $this->migrationRunner->getHistory()->current()
-        );
-    }
-
-    public function testCurrentAfterMigration(): void
-    {
-        $this->migrationRunner->migrate();
 
         $this->assertSame(
-            3,
-            $this->migrationRunner->getHistory()->current()
-        );
-    }
-
-    public function testCurrentAfterRollback(): void
-    {
-        $this->migrationRunner->migrate();
-        $this->migrationRunner->rollback();
-
-        $this->assertNull(
-            $this->migrationRunner->getHistory()->current()
+            [
+                2,
+                1,
+                1,
+            ],
+            array_column($history, 'batch')
         );
     }
 
@@ -88,15 +71,21 @@ final class MigrationHistoryTest extends TestCase
                     'type' => IntegerType::class,
                     'autoIncrement' => true,
                 ])
-                ->addColumn('version', [
+                ->addColumn('batch', [
                     'type' => IntegerType::class,
-                    'nullable' => true,
+                ])
+                ->addColumn('migration', [
+                    'type' => StringType::class,
                 ])
                 ->addColumn('timestamp', [
                     'type' => DateTimeType::class,
                     'default' => 'CURRENT_TIMESTAMP',
                 ])
                 ->setPrimaryKey('id')
+                ->addIndex('batch')
+                ->addIndex('migration', [
+                    'unique' => true,
+                ])
                 ->sql()
         );
     }

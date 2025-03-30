@@ -60,7 +60,7 @@ trait MysqlConnectionTrait
             'Tests\Mock' => 'tests/Mock',
         ]);
 
-        $this->migrationRunner->setNamespace('\Tests\Mock');
+        $this->migrationRunner->addNamespace('\Tests\Mock');
     }
 
     protected function tearDown(): void

@@ -5,6 +5,7 @@ namespace Fyre\Migration;
 use Fyre\DB\Connection;
 use Fyre\DB\Types\DateTimeType;
 use Fyre\DB\Types\IntegerType;
+use Fyre\DB\Types\StringType;
 use Fyre\Forge\ForgeRegistry;
 
 /**
@@ -33,18 +34,20 @@ class MigrationHistory
     }
 
     /**
-     * Add a migration version to the history.
+     * Add a migration to the history.
      *
-     * @param int|null $version The migration version.
+     * @param string $name The migration name.
+     * @param int $batch The batch number.
      */
-    public function add(int|null $version): void
+    public function add(string $name, int $batch): void
     {
         $this->connection
             ->insert()
             ->into(static::$table)
             ->values([
                 [
-                    'version' => $version,
+                    'batch' => $batch,
+                    'migration' => $name,
                 ],
             ])
             ->execute();
@@ -60,34 +63,46 @@ class MigrationHistory
         return $this->connection
             ->select()
             ->from(static::$table)
+            ->orderBy([
+                'batch' => 'DESC',
+                'id' => 'DESC',
+            ])
             ->execute()
             ->all();
     }
 
     /**
-     * Get the current version.
+     * Delete a migration from the history.
      *
-     * @return int|null The current version.
+     * @param string $name The migration name.
      */
-    public function current(): int|null
+    public function delete(string $name): void
     {
-        $result = $this->connection
+        $this->connection
+            ->delete()
+            ->from(static::$table)
+            ->where([
+                'migration' => $name,
+            ])
+            ->execute();
+    }
+
+    /**
+     * Get the next batch number.
+     *
+     * @return int The next batch number.
+     */
+    public function getNextBatch(): int
+    {
+        $lastBatch = $this->connection
             ->select([
-                'version',
+                'last_batch' => 'MAX(batch)',
             ])
             ->from(static::$table)
-            ->orderBy([
-                'id' => 'DESC',
-            ])
-            ->limit(1)
             ->execute()
-            ->first();
+            ->fetch()['last_batch'] ?? 0;
 
-        if (!$result || !$result['version']) {
-            return null;
-        }
-
-        return (int) $result['version'];
+        return $lastBatch + 1;
     }
 
     /**
@@ -105,15 +120,21 @@ class MigrationHistory
                 'type' => IntegerType::class,
                 'autoIncrement' => true,
             ])
-            ->addColumn('version', [
+            ->addColumn('batch', [
                 'type' => IntegerType::class,
-                'nullable' => true,
+            ])
+            ->addColumn('migration', [
+                'type' => StringType::class,
             ])
             ->addColumn('timestamp', [
                 'type' => DateTimeType::class,
                 'default' => 'CURRENT_TIMESTAMP',
             ])
             ->setPrimaryKey('id')
+            ->addIndex('batch')
+            ->addIndex('migration', [
+                'unique' => true,
+            ])
             ->execute();
     }
 }

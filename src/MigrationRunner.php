@@ -14,19 +14,22 @@ use Fyre\Migration\Exceptions\MigrationException;
 use Fyre\Utility\Path;
 use ReflectionClass;
 
+use function array_column;
 use function array_key_exists;
 use function array_pop;
-use function array_reverse;
+use function array_splice;
 use function array_unshift;
 use function class_exists;
 use function explode;
 use function implode;
+use function in_array;
 use function is_subclass_of;
 use function ksort;
-use function preg_match;
+use function str_starts_with;
+use function substr;
 use function trim;
 
-use const SORT_NUMERIC;
+use const SORT_NATURAL;
 
 /**
  * MigrationRunner
@@ -47,7 +50,7 @@ class MigrationRunner
 
     protected array|null $migrations = null;
 
-    protected string $namespace = '';
+    protected array $namespaces = [];
 
     /**
      * New MigrationRunner constructor.
@@ -66,10 +69,28 @@ class MigrationRunner
     }
 
     /**
+     * Add a namespace for loading models.
+     *
+     * @param string $namespace The namespace.
+     * @return static The ModelRegistry.
+     */
+    public function addNamespace(string $namespace): static
+    {
+        $namespace = static::normalizeNamespace($namespace);
+
+        if (!in_array($namespace, $this->namespaces)) {
+            $this->namespaces[] = $namespace;
+        }
+
+        return $this;
+    }
+
+    /**
      * Clear loaded migrations.
      */
     public function clear(): void
     {
+        $this->namespaces = [];
         $this->connection = null;
         $this->history = null;
         $this->migrations = null;
@@ -108,26 +129,6 @@ class MigrationRunner
     }
 
     /**
-     * Get a Migration.
-     *
-     * @param int $version The migration version.
-     * @return Migration|null The Migration.
-     */
-    public function getMigration(int $version): Migration|null
-    {
-        $migrations = $this->getMigrations();
-
-        if (!array_key_exists($version, $migrations)) {
-            return null;
-        }
-
-        $forge = $this->getForge();
-        $migrationClass = $migrations[$version];
-
-        return $this->container->build($migrationClass, ['forge' => $this->getForge()]);
-    }
-
-    /**
      * Get all migrations.
      *
      * @return array The migrations.
@@ -138,119 +139,122 @@ class MigrationRunner
     }
 
     /**
-     * Get the namespace.
+     * Get the namespaces.
      *
-     * @return string The namespace.
+     * @return array The namespaces.
      */
-    public function getNamespace(): string
+    public function getNamespaces(): array
     {
-        return $this->namespace;
+        return $this->namespaces;
     }
 
     /**
-     * Determine whether a migration version exists.
+     * Determine whether a namespace exists.
      *
-     * @param int $version The migration version.
-     * @return bool TRUE if the migration version exists, otherwise FALSE.
+     * @param string $namespace The namespace.
+     * @return bool TRUE if the namespace exists, otherwise FALSE.
      */
-    public function hasMigration(int $version): bool
+    public function hasNamespace(string $namespace): bool
     {
-        $migrations = $this->getMigrations();
+        $namespace = static::normalizeNamespace($namespace);
 
-        return array_key_exists($version, $migrations);
+        return in_array($namespace, $this->namespaces);
     }
 
     /**
-     * Migrate to a version.
+     * Migrate to the latest version.
      *
-     * @param int|null $version The migration version.
      * @return MigrationRunner The MigrationRunner.
-     *
-     * @throws MigrationException if the version is not valid.
      */
-    public function migrate(int|null $version = null): static
+    public function migrate(): static
     {
         $migrations = $this->getMigrations();
 
-        if ($version && !array_key_exists($version, $migrations)) {
-            throw MigrationException::forInvalidVersion($version);
-        }
+        $history = $this->getHistory();
 
-        $current = $this->getHistory()->current();
+        $ranMigrations = $history->all();
+        $ranMigrationNames = array_column($ranMigrations, 'migration');
 
-        if ($version && $version <= $current) {
-            return $this;
-        }
+        $batch = $history->getNextBatch();
 
-        foreach ($migrations as $migrationVersion => $migrationClass) {
-            if ($migrationVersion <= $current) {
+        foreach ($migrations as $migrationName => $className) {
+            if (in_array($migrationName, $ranMigrationNames)) {
                 continue;
             }
 
-            if ($version && $migrationVersion > $version) {
-                break;
-            }
-
-            $migration = $this->container->build($migrationClass, ['forge' => $this->getForge()]);
+            $migration = $this->container->build($className, ['forge' => $this->getForge()]);
 
             if (method_exists($migration, 'up')) {
                 $this->container->call([$migration, 'up']);
             }
 
-            $this->getHistory()->add($migrationVersion);
+            $history->add($migrationName, $batch);
         }
 
         return $this;
     }
 
     /**
-     * Rollback to a version.
+     * Remove a namespace.
      *
-     * @param int|null $version The migration version.
-     * @return MigrationRunner The MigrationRunner.
-     *
-     * @throws MigrationException if the version is not valid.
+     * @param string $namespace The namespace.
+     * @return static The ModelRegistry.
      */
-    public function rollback(int|null $version = null): static
+    public function removeNamespace(string $namespace): static
     {
-        $migrations = $this->getMigrations();
+        $namespace = static::normalizeNamespace($namespace);
 
-        if ($version && !array_key_exists($version, $migrations)) {
-            throw MigrationException::forInvalidVersion($version);
-        }
-
-        $current = $this->getHistory()->current();
-
-        if ($version && $version >= $current) {
-            return $this;
-        }
-
-        $migrations = array_reverse($migrations, true);
-
-        $nextMigration = null;
-
-        foreach ($migrations as $migrationVersion => $migrationClass) {
-            if ($migrationVersion > $current) {
+        foreach ($this->namespaces as $i => $otherNamespace) {
+            if ($otherNamespace !== $namespace) {
                 continue;
             }
 
-            $migration = $this->container->build($migrationClass, ['forge' => $this->getForge()]);
+            array_splice($this->namespaces, $i, 1);
+            break;
+        }
 
-            if ($version && $migrationVersion <= $version) {
-                $nextMigration = $migrationVersion;
+        return $this;
+    }
+
+    /**
+     * Rollback to a previous version.
+     *
+     * @param int|null $batches The number of batches to rollback.
+     * @param int|null $steps The number of steps to rollback.
+     * @return MigrationRunner The MigrationRunner.
+     */
+    public function rollback(int|null $batches = 1, int|null $steps = null): static
+    {
+        $migrations = $this->getMigrations();
+
+        $history = $this->getHistory();
+
+        $ranMigrations = $history->all();
+
+        $lastBatch = null;
+
+        foreach ($ranMigrations as $data) {
+            if ($batches !== null && $data['batch'] !== $lastBatch && $batches-- <= 0) {
                 break;
             }
 
-            if (method_exists($migration, 'down')) {
-                $this->container->call([$migration, 'down']);
+            if ($steps !== null && $steps-- <= 0) {
+                break;
             }
 
-            if ($migrationVersion < $current) {
-                $this->getHistory()->add($migrationVersion);
+            $migrationName = $data['migration'];
+            $lastBatch = $data['batch'];
+
+            if (array_key_exists($migrationName, $migrations)) {
+                $migration = $this->container->build($migrations[$migrationName], ['forge' => $this->getForge()]);
+
+                if (method_exists($migration, 'down')) {
+                    $this->container->call([$migration, 'down']);
+                }
             }
+
+            $history->delete($migrationName);
         }
-
-        $this->getHistory()->add($nextMigration);
 
         return $this;
     }
@@ -271,30 +275,17 @@ class MigrationRunner
     }
 
     /**
-     * Set the namespace.
-     *
-     * @param string $namespace The namespace.
-     * @return MigrationRunner The MigrationRunner.
-     */
-    public function setNamespace(string $namespace): static
-    {
-        $this->namespace = $this->normalizeNamespace($namespace);
-
-        return $this;
-    }
-
-    /**
      * Find all folders in namespaces.
      */
-    protected function findFolders(): array
+    protected function findFolders(string $namespace): array
     {
-        $parts = explode('\\', $this->namespace);
+        $parts = explode('\\', $namespace);
         $pathParts = [];
 
         $folders = [];
         while ($parts !== []) {
-            $namespace = implode('\\', $parts);
-            $paths = $this->loader->getNamespacePaths($namespace);
+            $currentNamespace = implode('\\', $parts);
+            $paths = $this->loader->getNamespacePaths($currentNamespace);
 
             foreach ($paths as $path) {
                 $path = Path::join($path, ...$pathParts);
@@ -321,43 +312,45 @@ class MigrationRunner
      */
     protected function findMigrations(): array
     {
-        $folders = $this->findFolders();
-
         $migrations = [];
-        foreach ($folders as $folder) {
-            $contents = $folder->contents();
+        foreach ($this->namespaces as $namespace) {
+            $folders = $this->findFolders($namespace);
 
-            foreach ($contents as $child) {
-                if ($child instanceof Folder) {
-                    continue;
+            foreach ($folders as $folder) {
+                $contents = $folder->contents();
+
+                foreach ($contents as $child) {
+                    if ($child instanceof Folder) {
+                        continue;
+                    }
+
+                    if ($child->extension() !== 'php') {
+                        continue;
+                    }
+
+                    $name = $child->fileName();
+
+                    $className = $namespace.$name;
+
+                    if (!class_exists($className) || !is_subclass_of($className, Migration::class)) {
+                        continue;
+                    }
+
+                    $reflection = new ReflectionClass($className);
+                    $name = $reflection->getShortName();
+
+                    if (!str_starts_with($name, 'Migration_')) {
+                        throw MigrationException::forInvalidClassName($name);
+                    }
+
+                    $name = substr($name, 10);
+
+                    $migrations[$name] = $className;
                 }
-
-                if ($child->extension() !== 'php') {
-                    continue;
-                }
-
-                $name = $child->fileName();
-
-                $className = $this->namespace.$name;
-
-                if (!class_exists($className) || !is_subclass_of($className, Migration::class)) {
-                    continue;
-                }
-
-                $reflection = new ReflectionClass($className);
-                $name = $reflection->getShortName();
-
-                if (!preg_match('/^Migration_(\d+)$/', $name, $match)) {
-                    throw MigrationException::forInvalidClassName($name);
-                }
-
-                $version = (int) $match[1];
-
-                $migrations[$version] = $className;
             }
         }
 
-        ksort($migrations, SORT_NUMERIC);
+        ksort($migrations, SORT_NATURAL);
 
         return $migrations;
     }

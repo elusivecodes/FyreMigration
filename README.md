@@ -58,9 +58,19 @@ $runner = $container->use(MigrationRunner::class);
 
 ## Methods
 
+**Add Namespace**
+
+Add a namespace for loading migrations.
+
+- `$namespace` is a string representing the namespace.
+
+```php
+$runner->addNamespace($namespace);
+```
+
 **Clear**
 
-Clear loaded migrations.
+Clear all namespaces and migrations.
 
 ```php
 $runner->clear();
@@ -90,16 +100,6 @@ Get the [*MigrationHistory*](#migration-histories).
 $history = $runner->getHistory();
 ```
 
-**Get Migration**
-
-Get a [*Migration*](#migrations).
-
-- `$version` is a number representing the migration version.
-
-```php
-$migration = $runner->getMigration($version);
-```
-
 **Get Migrations**
 
 Get all migrations.
@@ -108,42 +108,41 @@ Get all migrations.
 $migrations = $runner->getMigrations();
 ```
 
-**Get Namespace**
+**Get Namespaces**
 
-Get the namespace.
+Get the namespaces.
 
 ```php
-$namespace = $runner->getNamespace();
+$namespaces = $runner->getNamespaces();
 ```
 
-**Has Migration**
+**Has Namespace**
 
-Determine whether a migration version exists.
+Determine whether a namespace exists.
 
-- `$version` is a number representing the migration version.
+- `$namespace` is a string representing the namespace.
 
 ```php
-$hasMigration = $runner->hasMigration($version);
+$hasNamespace = $php->hasNamespace($namespace);
 ```
 
 **Migrate**
 
-Migrate to a version.
-
-- `$version` is a number representing the migration version, and will default to *null*.
+Migrate to the latest version.
 
 ```php
-$runner->migrate($version);
+$runner->migrate($latestVersion);
 ```
 
 **Rollback**
 
-Rollback to a version.
+Rollback to a previous version.
 
-- `$version` is a number representing the migration version, and will default to *null*.
+- `$batches` is a number representing the number of batches to rollback, and will default to *1*.
+- `$steps` is a number representing the number of steps to rollback, and will default to *null*.
 
 ```php
-$runner->rollback($version);
+$runner->rollback($batches, $steps);
 ```
 
 **Set Connection**
@@ -156,24 +155,22 @@ Set the [*Connection*](https://github.com/elusivecodes/FyreDB#connections).
 $runner->setConnection($connection);
 ```
 
-**Set Namespace**
+**Remove Namespace**
 
-Set the namespace.
+Remove a namespace.
 
-- `$namespace` is a string representing the migration namespace.
+- `$namespace` is a string representing the namespace.
 
 ```php
-$runner->setNamespace($namespace);
+$runner->removeNamespace($namespace);
 ```
 
 
 ## Migrations
 
-Migrations can be created by extending `\Fyre\Migration\Migration`, ensuring all below methods are implemented.
+Migrations can be created by extending the `\Fyre\Migration\Migration` class, prefixing the class name with "*Migration_*".
 
-Your migrations must be placed in the same namespace as defined by the `setNamespace` method above.
-
-Migration classes should follow the naming convention of `Migration_{version}` where `{version}` is the version number.
+To allow discovery of the migration, add the the namespace to the *MigrationRunner*.
 
 **Down**
 
@@ -198,10 +195,11 @@ $migration->up();
 
 Add a migration version to the history.
 
-- `$version` is a number representing the migration version.
+- `$name` is a string representing the migration name.
+- `$batch` is a number representing the batch number.
 
 ```php
-$history->add($version);
+$history->add($name, $batch);
 ```
 
 **All**
@@ -212,12 +210,22 @@ Get the migration history.
 $all = $history->all();
 ```
 
-**Current**
+**Delete**
 
-Get the current version.
+Delete a migration from the history.
+
+- `$name` is a string representing the migration name.
 
 ```php
-$version = $history->current();
+$history->delete($name);
+```
+
+**Get Next Batch**
+
+Get the next batch number.
+
+```php
+$batch = $history->getNextBatchNumber();
 ```
 
 
@@ -228,10 +236,9 @@ $version = $history->current();
 Perform database migrations.
 
 - `--db` is the [*ConnectionManager*](https://github.com/elusivecodes/FyreDB) config key, and will default to `ConnectionManager::DEFAULT`.
-- `--version` is the migration version, and will default to *null*.
 
 ```php
-$commandRunner->run('db:migrate', ['--db', 'default', '--version', '2']);
+$commandRunner->run('db:migrate', ['--db', 'default']);
 ```
 
 ### Rollback
@@ -239,8 +246,9 @@ $commandRunner->run('db:migrate', ['--db', 'default', '--version', '2']);
 Perform database rollbacks.
 
 - `--db` is the [*ConnectionManager*](https://github.com/elusivecodes/FyreDB) config key, and will default to `ConnectionManager::DEFAULT`.
-- `--version` is the migration version, and will default to *null*.
+- `--batches` is the number of batches to rollback, and will default to *1*.
+- `--steps` is the number of steps to rollback, and will default to *null*.
 
 ```php
-$commandRunner->run('db:rollback', ['--db', 'default', '--version', '1']);
+$commandRunner->run('db:rollback', ['--db', 'default', '--batches', '1', '--steps', 1]);
 ```

@@ -20,7 +20,12 @@ class RollbackCommand extends Command
         'db' => [
             'default' => ConnectionManager::DEFAULT,
         ],
-        'version' => [
+        'batches' => [
+            'as' => 'integer',
+            'default' => 1,
+        ],
+        'steps' => [
+            'as' => 'integer',
             'default' => null,
         ],
     ];
@@ -31,16 +36,17 @@ class RollbackCommand extends Command
      * @param ConnectionManager $connectionManager The ConnectionManager.
      * @param MigrationRunner $migrationRunner The MigrationRunner.
      * @param string $db The connection key.
-     * @param int|null $version The migration version.
+     * @param int|null $batches The number of batches to rollback.
+     * @param int $steps The number of steps  to rollback.
      * @return int|null The exit code.
      */
-    public function run(ConnectionManager $connectionManager, MigrationRunner $migrationRunner, string $db, int|null $version = null): int|null
+    public function run(ConnectionManager $connectionManager, MigrationRunner $migrationRunner, string $db, int|null $batches = 1, int|null $steps = null): int|null
     {
         $connection = $connectionManager->use($db);
 
         $migrationRunner
             ->setConnection($connection)
-            ->rollback($version);
+            ->rollback($batches, $steps);
 
         return static::CODE_SUCCESS;
     }
