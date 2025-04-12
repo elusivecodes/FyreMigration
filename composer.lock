@@ -457,16 +457,16 @@
         },
         {
             "name": "fyre/forge",
-            "version": "v5.0.7",
+            "version": "v5.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/elusivecodes/FyreForge.git",
-                "reference": "259ae2eefbbafe7a6158ddbe6bc65fe092db1ed9"
+                "reference": "3bb2e51191bc3ce3382be10e11fa16a35d0a4684"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/elusivecodes/FyreForge/zipball/259ae2eefbbafe7a6158ddbe6bc65fe092db1ed9",
-                "reference": "259ae2eefbbafe7a6158ddbe6bc65fe092db1ed9",
+                "url": "https://api.github.com/repos/elusivecodes/FyreForge/zipball/3bb2e51191bc3ce3382be10e11fa16a35d0a4684",
+                "reference": "3bb2e51191bc3ce3382be10e11fa16a35d0a4684",
                 "shasum": ""
             },
             "require": {
@@ -497,9 +497,9 @@
             "description": "A database forge library.",
             "support": {
                 "issues": "https://github.com/elusivecodes/FyreForge/issues",
-                "source": "https://github.com/elusivecodes/FyreForge/tree/v5.0.7"
+                "source": "https://github.com/elusivecodes/FyreForge/tree/v5.0.8"
             },
-            "time": "2025-04-08T09:36:27+00:00"
+            "time": "2025-04-12T01:24:50+00:00"
         },
         {
             "name": "fyre/inflector",
